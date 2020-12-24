@@ -1,5 +1,6 @@
 export default {
   buildDir: "docs",
+  mode: 'spa',
   target: "static",
   router: {
     base: "fifteen-game-test/"
