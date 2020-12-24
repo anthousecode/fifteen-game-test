@@ -3,7 +3,7 @@ export default {
   mode: 'spa',
   target: "static",
   router: {
-    base: "fifteen-game-test/"
+    base: "/fifteen-game-test/"
   },
   // Global page headers (https://go.nuxtjs.dev/config-head)
   head: {
