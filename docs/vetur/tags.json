@@ -1,0 +1,14 @@
+{
+  "BonesRow": {
+    "description": "Auto imported from components/BonesRow.vue"
+  },
+  "LazyBonesRow": {
+    "description": "Auto imported from components/BonesRow.vue"
+  },
+  "GameBlock": {
+    "description": "Auto imported from components/GameBlock.vue"
+  },
+  "LazyGameBlock": {
+    "description": "Auto imported from components/GameBlock.vue"
+  }
+}
