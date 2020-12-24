@@ -168,7 +168,7 @@ export async function setContext (app, context) {
       store: app.store,
       payload: context.payload,
       error: context.error,
-      base: '/',
+      base: 'https://github.com/anthousecode/fifteen-game-test/',
       env: {}
     }
     // Only set once

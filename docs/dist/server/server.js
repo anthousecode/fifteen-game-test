@@ -104,7 +104,7 @@ module.exports =
 /******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
 /******/
 /******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "/_nuxt/";
+/******/ 	__webpack_require__.p = "https://github.com/anthousecode/fifteen-game-test/_nuxt/";
 /******/
 /******/ 	// uncaught error handler for webpack runtime
 /******/ 	__webpack_require__.oe = function(err) {
@@ -1005,7 +1005,7 @@ async function setContext(app, context) {
       store: app.store,
       payload: context.payload,
       error: context.error,
-      base: '/',
+      base: 'https://github.com/anthousecode/fifteen-game-test/',
       env: {}
     }; // Only set once
 
@@ -1651,7 +1651,7 @@ external_vue_router_default.a.prototype.push = function push(location, onComplet
 external_vue_default.a.use(external_vue_router_default.a);
 const routerOptions = {
   mode: 'history',
-  base: '/',
+  base: 'https://github.com/anthousecode/fifteen-game-test/',
   linkActiveClass: 'nuxt-link-active',
   linkExactActiveClass: 'nuxt-link-exact-active',
   scrollBehavior: router_scrollBehavior,
@@ -2268,6 +2268,16 @@ const layouts = {
 
   async mounted() {
     this.$loading = this.$refs.loading;
+
+    if (this.isPreview) {
+      if (this.$store && this.$store._actions.nuxtServerInit) {
+        this.$loading.start();
+        await this.$store.dispatch('nuxtServerInit', this.context);
+      }
+
+      await this.refresh();
+      this.$loading.finish();
+    }
   },
 
   watch: {
@@ -2376,6 +2386,57 @@ const layouts = {
       }
 
       return Promise.resolve(layouts['_' + layout]);
+    },
+
+    getRouterBase() {
+      return (this.$router.options.base || '').replace(/\/+$/, '');
+    },
+
+    getRoutePath(route = '/') {
+      const base = this.getRouterBase();
+
+      if (base && route.startsWith(base)) {
+        route = route.substr(base.length);
+      }
+
+      return (route.replace(/\/+$/, '') || '/').split('?')[0].split('#')[0];
+    },
+
+    getStaticAssetsPath(route = '/') {
+      const {
+        staticAssetsBase
+      } = window.__NUXT__;
+      return urlJoin(staticAssetsBase, this.getRoutePath(route));
+    },
+
+    async fetchStaticManifest() {
+      return window.__NUXT_IMPORT__('manifest.js', encodeURI(urlJoin(this.getStaticAssetsPath(), 'manifest.js')));
+    },
+
+    setPagePayload(payload) {
+      this._pagePayload = payload;
+      this._payloadFetchIndex = 0;
+    },
+
+    async fetchPayload(route) {
+      const manifest = await this.fetchStaticManifest();
+      const path = this.getRoutePath(route);
+
+      if (!manifest.routes.includes(path)) {
+        this.setPagePayload(false);
+        throw new Error(`Route ${path} is not pre-rendered`);
+      }
+
+      const src = urlJoin(this.getStaticAssetsPath(route), 'payload.js');
+
+      try {
+        const payload = await window.__NUXT_IMPORT__(decodeURI(route), encodeURI(src));
+        this.setPagePayload(payload);
+        return payload;
+      } catch (err) {
+        this.setPagePayload(false);
+        throw err;
+      }
     }
 
   },
@@ -2841,7 +2902,7 @@ const createNext = ssrContext => opts => {
 
   opts.query = Object(external_querystring_["stringify"])(opts.query);
   opts.path = opts.path + (opts.query ? '?' + opts.query : '');
-  const routerBase = '/';
+  const routerBase = 'https://github.com/anthousecode/fifteen-game-test/';
 
   if (!opts.path.startsWith('http') && routerBase !== '/' && !opts.path.startsWith(routerBase)) {
     opts.path = server_urlJoin(routerBase, opts.path);
@@ -2914,7 +2975,9 @@ const createNext = ssrContext => opts => {
 
     ssrContext.rendered = () => {
       // Add the state from the vuex store
-      ssrContext.nuxt.state = store.state;
+      ssrContext.nuxt.state = store.state; // Stop recording store mutations
+
+      ssrContext.unsetMutationObserver();
     };
   };
 
@@ -2996,11 +3059,16 @@ const createNext = ssrContext => opts => {
 
   if (ssrContext.nuxt.error) {
     return renderErrorPage();
-  }
+  } // Record store mutations for full-static after nuxtServerInit and Middleware
+
+
+  ssrContext.nuxt.mutations = [];
+  ssrContext.unsetMutationObserver = store.subscribe(m => {
+    ssrContext.nuxt.mutations.push([m.type, m.payload]);
+  });
   /*
   ** Set layout
   */
-
 
   let layout = Components.length ? Components[0].options.layout : nuxt_error.layout;
 

@@ -44,7 +44,7 @@ const createNext = ssrContext => (opts) => {
   }
   opts.query = stringify(opts.query)
   opts.path = opts.path + (opts.query ? '?' + opts.query : '')
-  const routerBase = '/'
+  const routerBase = 'https://github.com/anthousecode/fifteen-game-test/'
   if (!opts.path.startsWith('http') && (routerBase !== '/' && !opts.path.startsWith(routerBase))) {
     opts.path = urlJoin(routerBase, opts.path)
   }
@@ -97,6 +97,9 @@ export default async (ssrContext) => {
     ssrContext.rendered = () => {
       // Add the state from the vuex store
       ssrContext.nuxt.state = store.state
+
+      // Stop recording store mutations
+      ssrContext.unsetMutationObserver()
     }
   }
 
@@ -164,6 +167,10 @@ export default async (ssrContext) => {
   if (ssrContext.nuxt.error) {
     return renderErrorPage()
   }
+
+  // Record store mutations for full-static after nuxtServerInit and Middleware
+  ssrContext.nuxt.mutations =[]
+  ssrContext.unsetMutationObserver = store.subscribe(m => { ssrContext.nuxt.mutations.push([m.type, m.payload]) })
 
   /*
   ** Set layout
